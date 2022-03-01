@@ -16,15 +16,15 @@ var coreContainer = lipgloss.NewStyle().
 	BorderRight(true).
 	Padding(0, 1)
 
-func (m *DisplayModel) setupProcessorView(msg tea.WindowSizeMsg, width, height int) {
+func (m *displayModel) setupProcessorView(msg tea.WindowSizeMsg, width, height int) {
 	coreContainer = coreContainer.Width(width/2 - 4).Height(height/2 - 2)
 }
 
-func (m *DisplayModel) updateProcessorViewSize(msg tea.WindowSizeMsg, width, height int) {
+func (m *displayModel) updateProcessorViewSize(msg tea.WindowSizeMsg, width, height int) {
 	coreContainer = coreContainer.Width(width/2 - 4).Height(height/2 - 2)
 }
 
-func (m *DisplayModel) updateProcessorView(msg tea.Msg) []tea.Cmd {
+func (m *displayModel) updateProcessorView(msg tea.Msg) tea.Cmd {
 	repr := strings.Builder{}
 	core1 := coreContainer.Render("core 1")
 	core2 := coreContainer.Render("core 2")
@@ -33,8 +33,9 @@ func (m *DisplayModel) updateProcessorView(msg tea.Msg) []tea.Cmd {
 	m.processorView = lipgloss.JoinVertical(
 		lipgloss.Left,
 		lipgloss.JoinHorizontal(lipgloss.Top, core1, core2),
+		"",
 		lipgloss.JoinHorizontal(lipgloss.Top, core3, core4),
 	)
 	repr.WriteString("\n")
-	return []tea.Cmd{}
+	return nil
 }

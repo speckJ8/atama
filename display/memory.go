@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/speckJ8/atama/device"
@@ -19,28 +18,21 @@ var memoryContainer = lipgloss.NewStyle().
 	BorderRight(true).
 	Padding(0, 1)
 
-var memoryViewport viewport.Model
-
-func (m *DisplayModel) setupMemoryView(msg tea.WindowSizeMsg, width, height int) {
-	memoryViewport = viewport.New(width, height-2)
+func (m *displayModel) setupMemoryView(msg tea.WindowSizeMsg, width, height int) {
 	memoryContainer = memoryContainer.Width(width).Height(height - 2)
-	// memoryViewport.HighPerformanceRendering = false
 }
-func (m *DisplayModel) updateMemoryViewSize(msg tea.WindowSizeMsg, width, height int) {
-	memoryViewport.Height = height - 2
+func (m *displayModel) updateMemoryViewSize(msg tea.WindowSizeMsg, width, height int) {
 	memoryContainer = memoryContainer.Width(width).Height(height - 2)
 }
 
-func (m *DisplayModel) updateMemoryView(msg tea.Msg) tea.Cmd {
+func (m *displayModel) updateMemoryView(msg tea.Msg) tea.Cmd {
 	repr := strings.Builder{}
-	repr.WriteString("Memory\n")
-	nLines := m.memory.Size / device.QWordSize
-	for l := uint(0); l < nLines && l < 100; l++ {
+	repr.WriteString("Memory")
+	for l := uint(0); l < uint(memoryContainer.GetHeight()-1); l++ {
 		block := m.memory.GetQWordDirectly(l * device.QWordSize)
-		repr.WriteString(fmt.Sprintf("%04x   %s\n", l, formatQuadWord(block)))
+		repr.WriteString(fmt.Sprintf("\n%04x   %s", l, formatQuadWord(block)))
 	}
-	memoryViewport.SetContent(repr.String())
-	m.memoryView = memoryContainer.Render(memoryViewport.View())
+	m.memoryView = memoryContainer.Render(repr.String())
 	return nil
 }
 
