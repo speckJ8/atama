@@ -1,24 +1,38 @@
 package device
 
+import (
+	"fmt"
+)
+
 type InterruptHandler = func()
 
 type Processor struct {
-	core1           Core
-	core2           Core
 	interruptVector map[uint]InterruptHandler
 	mem             *Memory
+	Cores           []Core
 }
 
-func NewProcessor(mem *Memory) Processor {
-	p := Processor{}
-	p.core1 = NewCore(&p, mem)
-	p.core2 = NewCore(&p, mem)
+func NewProcessor(mem *Memory, numCores int) Processor {
+	p := Processor{
+		Cores: make([]Core, numCores),
+	}
+	for c := range p.Cores {
+		p.Cores[c] = NewCore(&p, mem, fmt.Sprintf("Core %d", c))
+	}
 	return p
 }
 
 func (p *Processor) Start() {
-	p.core1.Status = CoreRunning
-	p.core2.Status = CoreHalted
-	p.core1.Registers.IP = ZeroQWord
-	go p.core1.Run()
+	for c := range p.Cores {
+		p.Cores[c].Status = CoreHalted
+	}
+	if len(p.Cores) > 0 {
+		p.Cores[0].Status = CoreRunning
+		p.Cores[0].Registers.IP = ZeroQWord
+		go p.Cores[0].Run()
+	}
+}
+
+func (p *Processor) NumCores() int {
+	return len(p.Cores)
 }
