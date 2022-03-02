@@ -40,7 +40,7 @@ func (m *displayModel) updateMemoryView(msg tea.Msg) tea.Cmd {
 func formatQuadWord(block device.QWord) string {
 	// XXX: the block size is assumed to be 8 bytes here in order to avoid
 	//      looping over block and perform multiple Sprintf's
-	return fmt.Sprintf("%02x%02x%02x%02x%02x%02x%02x%02x",
+	return fmt.Sprintf("%02x %02x %02x %02x %02x %02x %02x %02x",
 		block[0], block[1], block[2], block[3],
 		block[4], block[5], block[6], block[7])
 }
