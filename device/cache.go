@@ -16,72 +16,80 @@ const (
 )
 
 type Cache struct {
-	blockSize uint
-	setSize   uint
-	setCount  uint
+	BlockSize uint
+	SetSize   uint
+	SetCount  uint
 	// The length of the the data array
-	// should equal blockSize*setSize*setCount
-	blocks []CacheBlock
-	typ    CacheType
+	// should equal BlockSize*SetSize*SetCount
+	Blocks []CacheBlock
 }
 
 type CacheBlock struct {
-	Used    bool
-	Active  bool
-	Address uint
-	Data    []byte
+	// `Valid` indicates whether or not the block
+	// actually contains data referring to a memory location
+	// as opposed to just being uninitialized
+	Valid bool
+	// `RecentlyUsed` is set whenever a block is read or written and
+	// is used in the eviction logic
+	RecentlyUsed bool
+	Address      uint
+	Data         []byte
 }
 
-func NewCache(blockSize, setCount, setSize uint) Cache {
-	if blockSize%8 != 0 {
-		blockSize = blockSize - (blockSize % 8) + 8
+func NewCache(BlockSize, SetCount, SetSize uint) Cache {
+	if BlockSize%8 != 0 {
+		BlockSize = BlockSize - (BlockSize % 8) + 8
 	}
-	sets := make([]CacheBlock, setCount*setSize)
+	sets := make([]CacheBlock, SetCount*SetSize)
 	for s := range sets {
 		sets[s] = CacheBlock{
-			Active: false,
-			Data:   make([]byte, blockSize),
+			Data: make([]byte, BlockSize),
 		}
 	}
 	return Cache{
-		blockSize: blockSize,
-		setCount:  setCount,
-		setSize:   setSize,
-		blocks:    sets,
+		BlockSize: BlockSize,
+		SetCount:  SetCount,
+		SetSize:   SetSize,
+		Blocks:    sets,
 	}
 }
 
 // TODO: write back the cache line that was ejected
 func (c *Cache) Populate(address uint, mem *Memory) MemoryAccessStatus {
-	address = address - address%c.blockSize
-	statusChannel, dataChannel := mem.Read(address, c.blockSize)
+	address = address - address%c.BlockSize
+	statusChannel, dataChannel := mem.Read(address, c.BlockSize)
 	status := <-statusChannel
 	if status == MemoryAccessReadDone {
 		block := <-dataChannel
-		set := address % c.setCount
+		set := address % c.SetCount
 		s := set
-		for ; s < set+c.setSize; s++ {
-			if !c.blocks[s].Active {
-				c.blocks[s].Active = true
-				c.blocks[s].Used = true
-				c.blocks[s].Data = block
-				c.blocks[s].Address = address
+		// look for a block in the set where to put
+		// the contents fetched from memory
+		for ; s < set+c.SetSize; s++ {
+			if !c.Blocks[s].RecentlyUsed {
+				c.Blocks[s].RecentlyUsed = true
+				c.Blocks[s].Valid = true
+				c.Blocks[s].Data = block
+				c.Blocks[s].Address = address
 				break
-			} else if !c.blocks[s].Used {
-				c.blocks[s].Used = true
-				c.blocks[s].Data = block
-				c.blocks[s].Address = address
+			} else if !c.Blocks[s].Valid {
+				c.Blocks[s].Valid = true
+				c.Blocks[s].Data = block
+				c.Blocks[s].Address = address
 				break
 			}
 		}
-		if s == set+c.setSize {
+		if s == set+c.SetSize {
+			// there were no invalid and no stale blocks
+			// in this set so we will have write to the
+			// first block and make every other block stale
 			s = set
-			for ; s < set+c.setSize; s++ {
-				c.blocks[s].Used = false
+			for ; s < set+c.SetSize; s++ {
+				c.Blocks[s].RecentlyUsed = false
 			}
-			c.blocks[set].Used = true
-			c.blocks[set].Data = block
-			c.blocks[set].Address = address
+			c.Blocks[set].Valid = true
+			c.Blocks[set].Data = block
+			c.Blocks[set].Address = address
 		}
 	}
 	return status
@@ -198,16 +206,16 @@ func (c *Cache) SetByte(address uint, data Byte) CacheAccessStatus {
 }
 
 func (c *Cache) getBlock(address uint) *CacheBlock {
-	address = address - address%c.blockSize
-	set := address % c.setCount
-	for s := set; s < set+c.setSize; s++ {
-		if c.blocks[s].Active && c.blocks[s].Address == address {
-			return &c.blocks[s]
+	address = address - address%c.BlockSize
+	set := address % c.SetCount
+	for s := set; s < set+c.SetSize; s++ {
+		if c.Blocks[s].Valid && c.Blocks[s].Address == address {
+			return &c.Blocks[s]
 		}
 	}
 	return nil
 }
 
 func (c *Cache) globalAddressToBlockAddres(address uint) int {
-	return int(address % c.blockSize)
+	return int(address % c.BlockSize)
 }
