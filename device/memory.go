@@ -21,7 +21,7 @@ const (
 type Memory struct {
 	Size       uint
 	data       []byte
-	taskQMutex sync.Mutex
+	taskQMutex *sync.Mutex
 	taskQHead  *MemoryTask
 	taskQTail  *MemoryTask
 }
@@ -39,20 +39,23 @@ type MemoryTask struct {
 func NewMemory(size uint) Memory {
 	m := Memory{Size: size}
 	m.data = make([]byte, size)
+	m.taskQMutex = &sync.Mutex{}
 	return m
 }
 
 func (m *Memory) Init() {
 	go func() {
-		if task := m.popTask(); task != nil {
-			if task.Address+task.Size >= uint(len(m.data)) {
-				task.StatusChannel <- MemoryAccessInvalidAddress
-			} else if task.Type == MemoryTaskRead {
-				data := m.data[task.Address : task.Address+task.Size]
-				task.StatusChannel <- MemoryAccessReadDone
-				task.DataChannel <- data
-			} else {
-				copy(m.data[task.Address:task.Address+task.Size], task.Data)
+		for {
+			if task := m.popTask(); task != nil {
+				if task.Address+task.Size >= uint(len(m.data)) {
+					task.StatusChannel <- MemoryAccessInvalidAddress
+				} else if task.Type == MemoryTaskRead {
+					data := m.data[task.Address : task.Address+task.Size]
+					task.StatusChannel <- MemoryAccessReadDone
+					task.DataChannel <- data
+				} else if task.Type == MemoryTaskWrite {
+					copy(m.data[task.Address:task.Address+task.Size], task.Data)
+				}
 			}
 		}
 	}()
@@ -103,7 +106,10 @@ func (m *Memory) popTask() *MemoryTask {
 		return nil
 	}
 	task := m.taskQHead
-	m.taskQHead = task.NextTask
+	m.taskQHead = m.taskQHead.NextTask
+	if m.taskQHead == nil {
+		m.taskQTail = nil
+	}
 	return task
 }
 
