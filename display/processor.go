@@ -1,10 +1,12 @@
 package display
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/speckJ8/atama/device"
 )
 
 var coreContainer = lipgloss.NewStyle().
@@ -17,25 +19,70 @@ var coreContainer = lipgloss.NewStyle().
 	Padding(0, 1)
 
 func (m *displayModel) setupProcessorView(msg tea.WindowSizeMsg, width, height int) {
-	coreContainer = coreContainer.Width(width/2 - 4).Height(height/2 - 2)
+	coreContainer = coreContainer.Width(width/2 - 3).Height(height)
 }
 
 func (m *displayModel) updateProcessorViewSize(msg tea.WindowSizeMsg, width, height int) {
-	coreContainer = coreContainer.Width(width/2 - 4).Height(height/2 - 2)
+	coreContainer = coreContainer.Width(width/2 - 3).Height(height)
 }
 
 func (m *displayModel) updateProcessorView(msg tea.Msg) tea.Cmd {
-	repr := strings.Builder{}
-	core1 := coreContainer.Render("core 1")
-	core2 := coreContainer.Render("core 2")
-	core3 := coreContainer.Render("core 3")
-	core4 := coreContainer.Render("core 4")
-	m.processorView = lipgloss.JoinVertical(
-		lipgloss.Left,
-		lipgloss.JoinHorizontal(lipgloss.Top, core1, core2),
-		"",
-		lipgloss.JoinHorizontal(lipgloss.Top, core3, core4),
-	)
-	repr.WriteString("\n")
+	core1 := coreContainer.Render(coreView(&m.processor.Cores[0]))
+	core2 := coreContainer.Render(coreView(&m.processor.Cores[1]))
+	m.processorView = lipgloss.JoinHorizontal(lipgloss.Top, core1, core2)
 	return nil
+}
+
+func coreView(core *device.Core) string {
+	repr := strings.Builder{}
+	repr.WriteString(fmt.Sprintf("%s\n\n", core.Name))
+	repr.WriteString(cacheView(&core.ICache, "ICache"))
+	repr.WriteString("\n")
+	repr.WriteString(cacheView(&core.DCache, "DCache"))
+	return repr.String()
+}
+
+func cacheView(cache *device.Cache, name string) string {
+	repr := strings.Builder{}
+	repr.WriteString(lightText.Render(
+		fmt.Sprintf("--- %s %s",
+			name, strings.Repeat("-", max(coreContainer.GetWidth()-7-len(name), 0))),
+	))
+	repr.WriteString("\n")
+	repr.WriteString(lightText.Render(
+		fmt.Sprintf("Addr  Block%s  V  RU",
+			strings.Repeat(" ", max(coreContainer.GetWidth()-20, 0))),
+	))
+	repr.WriteString("\n")
+	for b := range cache.Blocks {
+		block := cache.Blocks[b]
+		valid := "\u2022"
+		if block.Valid {
+			valid = greenText.Render(valid)
+		} else {
+			valid = redText.Render(valid)
+		}
+		ru := ""
+		if block.RecentlyUsed {
+			ru = "\u2022"
+		}
+		blockStr := strings.Builder{}
+		for i := range block.Data {
+			blockStr.WriteString(fmt.Sprintf("%02x", block.Data[i]))
+		}
+		pad := strings.Repeat(" ",
+			max(coreContainer.GetWidth()-15-2*int(cache.BlockSize), 0))
+		repr.WriteString(
+			fmt.Sprintf("%04x  %s%s  %s   %s\n",
+				block.Address, blockStr.String(), pad, valid, ru),
+		)
+	}
+	return repr.String()
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
