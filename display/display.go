@@ -2,7 +2,9 @@ package display
 
 import (
 	"log"
+	"os"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -10,12 +12,18 @@ import (
 )
 
 const (
-	memoryContainerWidth = 40
+	memoryContainerWidth = 32
 )
 
+type Display interface {
+	Start()
+	Refresh()
+}
+
 type displayModel struct {
-	processor     device.Processor
-	memory        device.Memory
+	program       *tea.Program
+	processor     *device.Processor
+	memory        *device.Memory
 	ready         bool
 	memoryView    string
 	processorView string
@@ -24,29 +32,26 @@ type displayModel struct {
 }
 
 func (m *displayModel) Init() tea.Cmd {
-	m.memory = device.NewMemory(1 << 16)
-	m.processor = device.NewProcessor(&m.memory)
-	// return textinput.Blink
-	return nil
+	return textinput.Blink
 }
 
 func (m *displayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if k := msg.String(); k == "ctrl+c" || k == "q" || k == "esc" {
+		if k := msg.String(); k == "ctrl+c" || k == "esc" {
 			return m, tea.Quit
 		}
 	case tea.WindowSizeMsg:
 		if !m.ready {
-			m.setupMemoryView(msg, 26, msg.Height-2)
-			m.setupProcessorView(msg, msg.Width-26, msg.Height-2)
+			m.setupMemoryView(msg, memoryContainerWidth, msg.Height-2)
+			m.setupProcessorView(msg, msg.Width-memoryContainerWidth, msg.Height-4)
 			m.setupStatusView(msg, msg.Width)
 			m.setupCmdsView(msg, msg.Width)
 			m.ready = true
 		} else {
-			m.updateMemoryViewSize(msg, 26, msg.Height-2)
-			m.updateProcessorViewSize(msg, msg.Width-26, msg.Height-1)
+			m.updateMemoryViewSize(msg, memoryContainerWidth, msg.Height-2)
+			m.updateProcessorViewSize(msg, msg.Width-memoryContainerWidth, msg.Height-4)
 			m.updateStatusViewSize(msg, msg.Width)
 			m.updateCmdsViewSize(msg, msg.Width)
 		}
@@ -77,9 +82,22 @@ func (m *displayModel) View() string {
 	return s
 }
 
-func Start() {
-	p := tea.NewProgram(&displayModel{}, tea.WithAltScreen(), tea.WithMouseCellMotion())
+func NewDisplay(proc *device.Processor, mem *device.Memory) Display {
+	return &displayModel{processor: proc, memory: mem}
+}
+
+func (m *displayModel) Refresh() {
+	type nop struct{}
+	if m.program != nil {
+		m.program.Send(nop{})
+	}
+}
+
+func (m *displayModel) Start() {
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	m.program = p
 	if err := p.Start(); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
+	os.Exit(0)
 }
