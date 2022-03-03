@@ -54,6 +54,10 @@ func NewCache(BlockSize, SetCount, SetSize uint) Cache {
 	}
 }
 
+func (c *Cache) Size() uint {
+	return c.SetCount * c.SetSize * c.BlockSize
+}
+
 // TODO: write back the cache line that was ejected
 func (c *Cache) Populate(address uint, mem *Memory) MemoryAccessStatus {
 	address = address - address%c.BlockSize
