@@ -1,39 +1,38 @@
 package device
 
 type InstructionFetcher struct {
-	icache    *Cache
-	mem       *Memory
-	taskQHead *InstructionFetchTask
-	taskQTail *InstructionFetchTask
+	icache *Cache
+	mem    *Memory
+	tasks  chan instructionFetchTask
 }
 
-type InstructionFetchTask struct {
+type instructionFetchTask struct {
 	Address      uint
 	InstrChannel chan Instruction
-	NextTask     *InstructionFetchTask
+	NextTask     *instructionFetchTask
 }
 
 func (f *InstructionFetcher) Init(icache *Cache, mem *Memory) {
 	f.icache = icache
 	f.mem = mem
 	go func() {
-		if task := f.popTask(); task != nil {
-			f.executeTask(task)
+		for task := range f.tasks {
+			f.executeTask(&task)
 		}
 	}()
 }
 
 func (f *InstructionFetcher) Fetch(address uint) chan Instruction {
 	c := make(chan Instruction)
-	task := InstructionFetchTask{
+	task := instructionFetchTask{
 		Address:      address,
 		InstrChannel: c,
 	}
-	f.pushTask(&task)
+	f.tasks <- task
 	return c
 }
 
-func (f *InstructionFetcher) executeTask(task *InstructionFetchTask) {
+func (f *InstructionFetcher) executeTask(task *instructionFetchTask) {
 	var instruction Instruction
 	instr, cstatus := f.icache.GetQuadWord(task.Address)
 	if cstatus == CacheAccessUnaligned {
@@ -65,22 +64,4 @@ func (f *InstructionFetcher) executeTask(task *InstructionFetchTask) {
 returnNop:
 	task.InstrChannel <- NopInstr
 	return
-}
-
-func (f *InstructionFetcher) pushTask(task *InstructionFetchTask) {
-	if f.taskQTail != nil {
-		f.taskQTail.NextTask = task
-	} else {
-		f.taskQHead = task
-	}
-	f.taskQTail = task
-}
-
-func (f *InstructionFetcher) popTask() *InstructionFetchTask {
-	if f.taskQHead == nil {
-		return nil
-	}
-	task := f.taskQHead
-	f.taskQHead = task.NextTask
-	return task
 }

@@ -1,7 +1,7 @@
 package device
 
 type DataType = uint8
-type DataTaskType = uint8
+type dataTaskType = uint8
 
 const (
 	DataQuadWord DataType = iota
@@ -11,35 +11,34 @@ const (
 )
 
 const (
-	DataRead DataTaskType = iota
+	DataRead dataTaskType = iota
 	DataWrite
 )
 
 type DataLine struct {
-	dcache    *Cache
-	mem       *Memory
-	taskQHead *DataTask
-	taskQTail *DataTask
+	dcache *Cache
+	mem    *Memory
+	tasks  chan dataTask
 }
 
-type DataTask struct {
+type dataTask struct {
 	Address     uint
 	Type        DataType
-	TaskType    DataTaskType
+	TaskType    dataTaskType
 	Data        QWord
 	DataChannel chan QWord
-	NextTask    *DataTask
+	NextTask    *dataTask
 }
 
 func (f *DataLine) Init(dcache *Cache, mem *Memory) {
 	f.dcache = dcache
 	f.mem = mem
 	go func() {
-		if task := f.popTask(); task != nil {
+		for task := range f.tasks {
 			if task.TaskType == DataWrite {
-				f.executeWriteTask(task)
+				f.executeWriteTask(&task)
 			} else {
-				f.executeReadTask(task)
+				f.executeReadTask(&task)
 			}
 		}
 	}()
@@ -47,28 +46,28 @@ func (f *DataLine) Init(dcache *Cache, mem *Memory) {
 
 func (f *DataLine) Read(address uint, t DataType) chan QWord {
 	c := make(chan QWord)
-	task := DataTask{
+	task := dataTask{
 		Address:     address,
 		Type:        t,
 		TaskType:    DataRead,
 		DataChannel: c,
 	}
-	f.pushTask(&task)
+	f.tasks <- task
 	return c
 }
 
 func (f *DataLine) Write(address uint, data QWord, t DataType) {
-	task := DataTask{
+	task := dataTask{
 		Address:     address,
 		Type:        t,
 		TaskType:    DataWrite,
 		Data:        data,
 		DataChannel: nil,
 	}
-	f.pushTask(&task)
+	f.tasks <- task
 }
 
-func (f *DataLine) executeReadTask(task *DataTask) {
+func (f *DataLine) executeReadTask(task *dataTask) {
 	var data QWord
 	var cstatus CacheAccessStatus
 	if task.Type == DataByte {
@@ -131,7 +130,7 @@ func (f *DataLine) executeReadTask(task *DataTask) {
 	return
 }
 
-func (f *DataLine) executeWriteTask(task *DataTask) {
+func (f *DataLine) executeWriteTask(task *dataTask) {
 	var cstatus CacheAccessStatus
 	if task.Type == DataByte {
 		cstatus = f.dcache.SetByte(task.Address, task.Data[0])
@@ -149,22 +148,4 @@ func (f *DataLine) executeWriteTask(task *DataTask) {
 		f.mem.Write(task.Address, task.Data[:])
 	}
 	return
-}
-
-func (f *DataLine) pushTask(task *DataTask) {
-	if f.taskQTail != nil {
-		f.taskQTail.NextTask = task
-	} else {
-		f.taskQHead = task
-	}
-	f.taskQTail = task
-}
-
-func (f *DataLine) popTask() *DataTask {
-	if f.taskQHead == nil {
-		return nil
-	}
-	task := f.taskQHead
-	f.taskQHead = task.NextTask
-	return task
 }
