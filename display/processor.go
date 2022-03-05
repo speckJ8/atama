@@ -45,12 +45,13 @@ func cacheView(cache *device.Cache, name string) string {
 	))
 	repr.WriteString("\n")
 	repr.WriteString(lightText.Render(
-		fmt.Sprintf("Addr  Block%s  V  RU",
-			strings.Repeat(" ", max(coreContainer.GetWidth()-20, 0))),
+		fmt.Sprintf("Addr  Set  Block%s  V  RU",
+			strings.Repeat(" ", max(coreContainer.GetWidth()-25, 0))),
 	))
 	repr.WriteString("\n")
 	for b := range cache.Blocks {
 		block := cache.Blocks[b]
+		set := (uint(b) % cache.SetSize) % cache.SetCount
 		valid := "\u2022"
 		if block.Valid {
 			valid = greenText.Render(valid)
@@ -63,13 +64,13 @@ func cacheView(cache *device.Cache, name string) string {
 		}
 		blockStr := strings.Builder{}
 		for i := range block.Data {
-			blockStr.WriteString(fmt.Sprintf("%02x", block.Data[i]))
+			blockStr.WriteString(fmt.Sprintf("%02x ", block.Data[i]))
 		}
 		pad := strings.Repeat(" ",
-			max(coreContainer.GetWidth()-15-2*int(cache.BlockSize), 0))
+			max(coreContainer.GetWidth()-20-3*int(cache.BlockSize), 0))
 		repr.WriteString(
-			fmt.Sprintf("%04x  %s%s  %s   %s\n",
-				block.Address, blockStr.String(), pad, valid, ru),
+			fmt.Sprintf("%04x  %3d  %s%s  %s   %s\n",
+				block.Address, set, blockStr.String(), pad, valid, ru),
 		)
 	}
 	return repr.String()
