@@ -5,35 +5,28 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/speckJ8/atama/device"
 )
 
-var memoryContainer = lipgloss.NewStyle().
-	Border(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("#ffffff")).
-	BorderTop(true).
-	BorderBottom(true).
-	BorderLeft(true).
-	BorderRight(true).
-	Padding(0, 1)
+var memoryContainer = container.Copy()
 
 func (m *displayModel) setupMemoryView(msg tea.WindowSizeMsg, width, height int) {
-	memoryContainer = memoryContainer.Width(width).Height(height - 2)
+	memoryContainer = memoryContainer.Width(width).Height(height - 1)
 }
+
 func (m *displayModel) updateMemoryViewSize(msg tea.WindowSizeMsg, width, height int) {
-	memoryContainer = memoryContainer.Width(width).Height(height - 2)
+	memoryContainer = memoryContainer.Width(width).Height(height - 1)
 }
 
 func (m *displayModel) updateMemoryView(msg tea.Msg) tea.Cmd {
 	repr := strings.Builder{}
-	repr.WriteString("Memory")
 	maxSize := m.memory.Size / device.QWordSize
-	for l := uint(0); l < uint(memoryContainer.GetHeight()-1) && l < maxSize; l++ {
+	for l := uint(0); l < uint(memoryContainer.GetHeight()-2) && l < maxSize; l++ {
 		block := m.memory.GetQWordDirectly(l * device.QWordSize)
 		repr.WriteString(fmt.Sprintf("\n%04x   %s", l, formatQuadWord(block)))
 	}
-	m.memoryView = memoryContainer.Render(repr.String())
+	m.memoryView = renderWithTitle(&memoryContainer, boldText.Render("Memory"), 6,
+		repr.String())
 	return nil
 }
 

@@ -9,14 +9,7 @@ import (
 	"github.com/speckJ8/atama/device"
 )
 
-var coreContainer = lipgloss.NewStyle().
-	Border(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("#ffffff")).
-	BorderTop(true).
-	BorderBottom(true).
-	BorderLeft(true).
-	BorderRight(true).
-	Padding(0, 1)
+var coreContainer = container.Copy()
 
 func (m *displayModel) setupProcessorView(msg tea.WindowSizeMsg, width, height int) {
 	coreContainer = coreContainer.Width(width/2 - 3).Height(height)
@@ -27,15 +20,17 @@ func (m *displayModel) updateProcessorViewSize(msg tea.WindowSizeMsg, width, hei
 }
 
 func (m *displayModel) updateProcessorView(msg tea.Msg) tea.Cmd {
-	core1 := coreContainer.Render(coreView(&m.processor.Cores[0]))
-	core2 := coreContainer.Render(coreView(&m.processor.Cores[1]))
+	core1 := renderWithTitle(&coreContainer, boldText.Render(m.processor.Cores[0].Name),
+		len(m.processor.Cores[0].Name), coreView(&m.processor.Cores[0]))
+	core2 := renderWithTitle(&coreContainer, boldText.Render(m.processor.Cores[1].Name),
+		len(m.processor.Cores[1].Name), coreView(&m.processor.Cores[1]))
 	m.processorView = lipgloss.JoinHorizontal(lipgloss.Top, core1, core2)
 	return nil
 }
 
 func coreView(core *device.Core) string {
 	repr := strings.Builder{}
-	repr.WriteString(fmt.Sprintf("%s\n\n", core.Name))
+	repr.WriteString("\n")
 	repr.WriteString(cacheView(&core.ICache, "ICache"))
 	repr.WriteString("\n")
 	repr.WriteString(cacheView(&core.DCache, "DCache"))
