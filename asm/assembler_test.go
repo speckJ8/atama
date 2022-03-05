@@ -1,7 +1,9 @@
-package device
+package asm
 
 import (
 	"testing"
+
+	"github.com/speckJ8/atama/device"
 )
 
 func TestAssembler(t *testing.T) {
@@ -19,11 +21,14 @@ func TestAssembler(t *testing.T) {
 				halt
 			`,
 			binary: []byte{
-				byte(MovIR), byte(MovIR >> 8), 1, 0, R0Number[0], R0Number[1], 0, 0,
-				byte(MovIR), byte(MovIR >> 8), 2, 0, R1Number[0], R1Number[1], 0, 0,
-				byte(Add), byte(Add >> 8), R1Number[0], R1Number[1],
-				R2Number[0], R2Number[1], 0, 0,
-				byte(Halt), byte(Halt >> 8), 0, 0, 0, 0, 0, 0,
+				byte(device.MovIR), byte(device.MovIR >> 8), 1, 0,
+				device.R0Number[0], device.R0Number[1], 0, 0,
+				byte(device.MovIR), byte(device.MovIR >> 8), 2, 0,
+				device.R1Number[0], device.R1Number[1], 0, 0,
+				byte(device.Add), byte(device.Add >> 8),
+				device.R1Number[0], device.R1Number[1],
+				device.R2Number[0], device.R2Number[1], 0, 0,
+				byte(device.Halt), byte(device.Halt >> 8), 0, 0, 0, 0, 0, 0,
 			},
 		},
 		{
@@ -37,10 +42,13 @@ func TestAssembler(t *testing.T) {
 			b:      .dword
 			`,
 			binary: []byte{
-				byte(MovMR), byte(MovMR >> 8), 24, 0, R6Number[0], R6Number[1], 0, 0,
-				byte(MovMR), byte(MovMR >> 8), 28, 0, R7Number[0], R7Number[1], 0, 0,
-				byte(Mul), byte(Mul >> 8), R6Number[0], R6Number[1],
-				R7Number[0], R7Number[1], 0, 0,
+				byte(device.MovMR), byte(device.MovMR >> 8), 24, 0,
+				device.R6Number[0], device.R6Number[1], 0, 0,
+				byte(device.MovMR), byte(device.MovMR >> 8), 28, 0,
+				device.R7Number[0], device.R7Number[1], 0, 0,
+				byte(device.Mul), byte(device.Mul >> 8),
+				device.R6Number[0], device.R6Number[1],
+				device.R7Number[0], device.R7Number[1], 0, 0,
 				0, 0, 0, 0,
 				0, 0, 0, 0,
 			},
