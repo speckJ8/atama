@@ -31,8 +31,8 @@ type Core struct {
 
 func NewCore(proc *Processor, mem *Memory, name string) Core {
 	c := Core{proc: proc, mem: mem}
-	c.ICache = NewCache(32, 4, 2)
-	c.DCache = NewCache(32, 4, 2)
+	c.ICache = NewCache(16, 4, 2)
+	c.DCache = NewCache(16, 4, 2)
 	c.Name = name
 	return c
 }
