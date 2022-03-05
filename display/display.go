@@ -13,7 +13,6 @@ import (
 
 const (
 	memoryContainerWidth = 32
-	statsContainerHeight = 20
 )
 
 type Display interface {
@@ -28,7 +27,6 @@ type displayModel struct {
 	ready         bool
 	memoryView    string
 	processorView string
-	statsView     string
 	statusView    string
 	cmdsView      string
 }
@@ -46,17 +44,13 @@ func (m *displayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		if !m.ready {
-			m.setupMemoryView(msg, memoryContainerWidth,
-				msg.Height-statsContainerHeight-2)
-			m.setupStatsView(msg, memoryContainerWidth, statsContainerHeight-2)
+			m.setupMemoryView(msg, memoryContainerWidth, msg.Height-3)
 			m.setupProcessorView(msg, msg.Width-memoryContainerWidth, msg.Height-4)
 			m.setupStatusView(msg, msg.Width)
 			m.setupCmdsView(msg, msg.Width)
 			m.ready = true
 		} else {
-			m.updateMemoryViewSize(msg, memoryContainerWidth,
-				msg.Height-statsContainerHeight-2)
-			m.updateStatsViewSize(msg, memoryContainerWidth, statsContainerHeight-2)
+			m.updateMemoryViewSize(msg, memoryContainerWidth, msg.Height-3)
 			m.updateProcessorViewSize(msg, msg.Width-memoryContainerWidth, msg.Height-4)
 			m.updateStatusViewSize(msg, msg.Width)
 			m.updateCmdsViewSize(msg, msg.Width)
@@ -65,21 +59,17 @@ func (m *displayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.ready {
 		mCmd := m.updateMemoryView(msg)
-		sCmd := m.updateStatsView(msg)
 		pCmd := m.updateProcessorView(msg)
-		ssCmd := m.updateStatusView(msg)
+		sCmd := m.updateStatusView(msg)
 		cCmd := m.updateCmdsView(msg)
 		if mCmd != nil {
 			cmds = append(cmds, mCmd)
 		}
-		if sCmd != nil {
-			cmds = append(cmds, sCmd)
-		}
 		if pCmd != nil {
 			cmds = append(cmds, pCmd)
 		}
-		if ssCmd != nil {
-			cmds = append(cmds, ssCmd)
+		if sCmd != nil {
+			cmds = append(cmds, sCmd)
 		}
 		if cCmd != nil {
 			cmds = append(cmds, cCmd)
@@ -96,7 +86,7 @@ func (m *displayModel) View() string {
 		lipgloss.Top,
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			lipgloss.JoinVertical(lipgloss.Top, m.memoryView, m.statsView),
+			m.memoryView,
 			m.processorView,
 		),
 		m.statusView,

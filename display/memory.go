@@ -21,7 +21,7 @@ func (m *displayModel) updateMemoryViewSize(msg tea.WindowSizeMsg, width, height
 func (m *displayModel) updateMemoryView(msg tea.Msg) tea.Cmd {
 	repr := strings.Builder{}
 	maxSize := m.memory.Size / device.QWordSize
-	for l := uint(0); l < uint(memoryContainer.GetHeight()-2) && l < maxSize; l++ {
+	for l := uint(0); l < uint(memoryContainer.GetHeight()-1) && l < maxSize; l++ {
 		block := m.memory.GetQWordDirectly(l * device.QWordSize)
 		repr.WriteString(fmt.Sprintf("\n%04x   %s", l, formatQuadWord(block)))
 	}
