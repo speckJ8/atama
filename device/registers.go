@@ -35,8 +35,8 @@ type RegisterSet struct {
 	R5 QWord
 	R6 QWord
 	R7 QWord
-	SP QWord
-	IP QWord
+	SP Word
+	IP Word
 }
 
 func (s *RegisterSet) SetR0D(value DWord) {

@@ -28,7 +28,7 @@ func (p *Processor) Start() {
 	}
 	if len(p.Cores) > 0 {
 		p.Cores[0].Status = CoreRunning
-		p.Cores[0].Registers.IP = ZeroQWord
+		p.Cores[0].Registers.IP = ZeroWord
 		go p.Cores[0].Run()
 	}
 }
