@@ -40,11 +40,3 @@ func NewCore(proc *Processor, mem *Memory, name string) Core {
 func (c *Core) Run() {
 	// start fetching instructions from Registers.IP and executing
 }
-
-func (c *Core) ICacheSize() uint {
-	return c.ICache.Size()
-}
-
-func (c *Core) DCacheSize() uint {
-	return c.DCache.Size()
-}
