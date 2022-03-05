@@ -66,30 +66,32 @@ func (c *Cache) Populate(address uint, mem *Memory) MemoryAccessStatus {
 	if status == MemoryAccessReadDone {
 		block := <-dataChannel
 		set := address % c.SetCount
-		s := set
 		// look for a block in the set where to put
 		// the contents fetched from memory
-		for ; s < set+c.SetSize; s++ {
-			if !c.Blocks[s].RecentlyUsed {
-				c.Blocks[s].RecentlyUsed = true
-				c.Blocks[s].Valid = true
-				c.Blocks[s].Data = block
-				c.Blocks[s].Address = address
+		i := uint(0)
+		for ; i < c.SetSize; i++ {
+			a := set + i*c.SetCount
+			if !c.Blocks[a].RecentlyUsed {
+				c.Blocks[a].RecentlyUsed = true
+				c.Blocks[a].Valid = true
+				c.Blocks[a].Data = block
+				c.Blocks[a].Address = address
 				break
-			} else if !c.Blocks[s].Valid {
-				c.Blocks[s].Valid = true
-				c.Blocks[s].Data = block
-				c.Blocks[s].Address = address
+			} else if !c.Blocks[a].Valid {
+				c.Blocks[a].Valid = true
+				c.Blocks[a].Data = block
+				c.Blocks[a].Address = address
 				break
 			}
 		}
-		if s == set+c.SetSize {
+		if i == c.SetSize {
 			// there were no invalid and no stale blocks
 			// in this set so we will have write to the
 			// first block and make every other block stale
-			s = set
-			for ; s < set+c.SetSize; s++ {
-				c.Blocks[s].RecentlyUsed = false
+			i = uint(0)
+			for ; i < c.SetSize; i++ {
+				a := set + i*c.SetCount
+				c.Blocks[a].RecentlyUsed = false
 			}
 			c.Blocks[set].Valid = true
 			c.Blocks[set].Data = block
@@ -212,9 +214,10 @@ func (c *Cache) SetByte(address uint, data Byte) CacheAccessStatus {
 func (c *Cache) getBlock(address uint) *CacheBlock {
 	address = address - address%c.BlockSize
 	set := address % c.SetCount
-	for s := set; s < set+c.SetSize; s++ {
-		if c.Blocks[s].Valid && c.Blocks[s].Address == address {
-			return &c.Blocks[s]
+	for i := uint(0); i < c.SetSize; i++ {
+		a := set + i*c.SetCount
+		if c.Blocks[a].Valid && c.Blocks[a].Address == address {
+			return &c.Blocks[a]
 		}
 	}
 	return nil
