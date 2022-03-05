@@ -8,11 +8,17 @@ import (
 )
 
 var (
-	text      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
-	boldText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
-	lightText = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
-	greenText = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-	redText   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
+	text       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
+	boldText   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
+	lightText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	greenText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+	redText    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
+	activeText = lipgloss.NewStyle().Background(lipgloss.Color("#CCCCCC")).
+			Foreground(lipgloss.Color("#000000")).
+			Padding(0, 1)
+	inactiveText = lipgloss.NewStyle().Background(lipgloss.Color("#353533")).
+			Foreground(lipgloss.Color("#CCCCCC")).
+			Padding(0, 1)
 
 	border = lipgloss.Border{}
 
