@@ -1,5 +1,7 @@
 package device
 
+import "math"
+
 type CacheType = Byte
 type CacheAccessStatus = Byte
 
@@ -16,9 +18,10 @@ const (
 )
 
 type Cache struct {
-	BlockSize uint
-	SetSize   uint
-	SetCount  uint
+	BlockSize     uint
+	blockSizeBits uint
+	SetSize       uint
+	SetCount      uint
 	// The length of the the data array
 	// should equal BlockSize*SetSize*SetCount
 	Blocks []CacheBlock
@@ -47,10 +50,11 @@ func NewCache(BlockSize, SetCount, SetSize uint) Cache {
 		}
 	}
 	return Cache{
-		BlockSize: BlockSize,
-		SetCount:  SetCount,
-		SetSize:   SetSize,
-		Blocks:    sets,
+		BlockSize:     BlockSize,
+		blockSizeBits: uint(math.Log2(float64(BlockSize))),
+		SetCount:      SetCount,
+		SetSize:       SetSize,
+		Blocks:        sets,
 	}
 }
 
@@ -65,7 +69,7 @@ func (c *Cache) Populate(address uint, mem *Memory) MemoryAccessStatus {
 	status := <-statusChannel
 	if status == MemoryAccessReadDone {
 		block := <-dataChannel
-		set := address % c.SetCount
+		set := (address >> c.blockSizeBits) % c.SetCount
 		// look for a block in the set where to put
 		// the contents fetched from memory
 		i := uint(0)
@@ -212,8 +216,7 @@ func (c *Cache) SetByte(address uint, data Byte) CacheAccessStatus {
 }
 
 func (c *Cache) getBlock(address uint) *CacheBlock {
-	address = address - address%c.BlockSize
-	set := address % c.SetCount
+	set := (address >> c.blockSizeBits) % c.SetCount
 	for i := uint(0); i < c.SetSize; i++ {
 		a := set + i*c.SetCount
 		if c.Blocks[a].Valid && c.Blocks[a].Address == address {
