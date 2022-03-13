@@ -41,9 +41,6 @@ type CacheBlock struct {
 }
 
 func NewCache(BlockSize, SetCount, SetSize uint) Cache {
-	if BlockSize%8 != 0 {
-		BlockSize = BlockSize - (BlockSize % 8) + 8
-	}
 	sets := make([]CacheBlock, SetCount*SetSize)
 	for s := range sets {
 		sets[s] = CacheBlock{
@@ -222,6 +219,7 @@ func (c *Cache) SetByte(address uint, data Byte) CacheAccessStatus {
 
 func (c *Cache) getBlock(address uint) *CacheBlock {
 	set := (address >> c.blockSizeBits) % c.SetCount
+	address = address - address%c.BlockSize
 	for i := uint(0); i < c.SetSize; i++ {
 		a := set + i*c.SetCount
 		if c.Blocks[a].Valid && c.Blocks[a].Address == address {
