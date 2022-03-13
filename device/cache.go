@@ -35,6 +35,7 @@ type CacheBlock struct {
 	// `RecentlyUsed` is set whenever a block is read or written and
 	// is used in the eviction logic
 	RecentlyUsed bool
+	Dirty        bool
 	Address      uint
 	Data         []byte
 }
@@ -172,6 +173,7 @@ func (c *Cache) SetQuadWord(address uint, data QWord) CacheAccessStatus {
 	for i := 0; i < 8; i++ {
 		block.Data[start+i] = data[i]
 	}
+	block.Dirty = true
 	return CacheAccessWriteDone
 }
 
@@ -188,6 +190,7 @@ func (c *Cache) SetDoubleWord(address uint, data DWord) CacheAccessStatus {
 	block.Data[start+1] = data[1]
 	block.Data[start+2] = data[2]
 	block.Data[start+3] = data[3]
+	block.Dirty = true
 	return CacheAccessWriteDone
 }
 
@@ -202,6 +205,7 @@ func (c *Cache) SetWord(address uint, data Word) CacheAccessStatus {
 	start := c.globalAddressToBlockAddres(address)
 	block.Data[start] = data[0]
 	block.Data[start+1] = data[1]
+	block.Dirty = true
 	return CacheAccessWriteDone
 }
 
@@ -212,6 +216,7 @@ func (c *Cache) SetByte(address uint, data Byte) CacheAccessStatus {
 	}
 	start := c.globalAddressToBlockAddres(address)
 	block.Data[start] = data
+	block.Dirty = true
 	return CacheAccessWriteDone
 }
 
